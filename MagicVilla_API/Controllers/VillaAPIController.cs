@@ -15,7 +15,7 @@ namespace MagicVilla_API.Controllers
             return Ok(VillaStore.villaList);
         }
 
-        [HttpGet("{id:int}")]
+        [HttpGet("{id:int}", Name = "GetVilla")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -28,29 +28,27 @@ namespace MagicVilla_API.Controllers
         }
 
         [HttpPost]
-        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<VillaDTO> CreateVilla([FromBody] VillaDTO villaDto)
         {
-            if (villaDto == null || string.IsNullOrWhiteSpace(villaDto.Name))
-            {
-                return BadRequest();
-            }
+            if (villaDto == null || string.IsNullOrWhiteSpace(villaDto.Name)) { return BadRequest(); }
+            if (villaDto.Id > 0) { return StatusCode(StatusCodes.Status500InternalServerError); }
 
             // Validar si el nombre ya existe (opcional)
-            if (VillaStore.villaList.Any(v => v.Name.ToLower() == villaDto.Name.ToLower()))
+            if (VillaStore.villaList.Any(v => v.Name.Equals(villaDto.Name, StringComparison.CurrentCultureIgnoreCase)))
             {
                 ModelState.AddModelError("NombreExiste", "La villa con ese nombre ya existe.");
                 return BadRequest(ModelState);
             }
 
             // Generar nuevo Id
-            int newId = VillaStore.villaList.Any() ? VillaStore.villaList.Max(v => v.Id) + 1 : 1;
+            int newId = VillaStore.villaList.Count != 0 ? VillaStore.villaList.Max(v => v.Id) + 1 : 1;
             villaDto.Id = newId;
             VillaStore.villaList.Add(villaDto);
 
-            return Ok(villaDto);
+            return CreatedAtRoute("GetVilla", new { id = villaDto.Id }, villaDto);
         }
     }
 }
