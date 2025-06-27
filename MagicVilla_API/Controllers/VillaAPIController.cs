@@ -26,5 +26,31 @@ namespace MagicVilla_API.Controllers
             if (villa == null) { return NotFound(); } 
             return Ok(villa);
         }
+
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<VillaDTO> CreateVilla([FromBody] VillaDTO villaDto)
+        {
+            if (villaDto == null || string.IsNullOrWhiteSpace(villaDto.Name))
+            {
+                return BadRequest();
+            }
+
+            // Validar si el nombre ya existe (opcional)
+            if (VillaStore.villaList.Any(v => v.Name.ToLower() == villaDto.Name.ToLower()))
+            {
+                ModelState.AddModelError("NombreExiste", "La villa con ese nombre ya existe.");
+                return BadRequest(ModelState);
+            }
+
+            // Generar nuevo Id
+            int newId = VillaStore.villaList.Any() ? VillaStore.villaList.Max(v => v.Id) + 1 : 1;
+            villaDto.Id = newId;
+            VillaStore.villaList.Add(villaDto);
+
+            return Ok(villaDto);
+        }
     }
 }
